@@ -24,6 +24,7 @@ ReferenceFrameSignature = 0x80 # сигнатура опорного кадра 
 # Размер заголовка
 #
 HeaderSize = 2330
+PlatformCalcDataRecSize = 372
 
 # *******************************************
 #    идентификаторы дискретных каналов
@@ -69,6 +70,9 @@ UnknownExtendedCanal = 'Несуществующий дискретный кан
 ExtendedDataError = 'Неверные параметры функции установки дискретных данных'
 
 
+SizeHeaderSignature = 4 # размер  поля сигнатуры файла
+SizeHeaderVersion = 1 # размер поля версии
+SizeHeaderDataCRC32 = 4 # размер поля DataCRC32
 
 # корректировочная маска для невидимости реальной маски в памяти
 XORMask = 0xAA
