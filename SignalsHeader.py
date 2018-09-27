@@ -21,10 +21,11 @@ class SignalHeader:
         self.PacketsPerSecond = 0 # скорость пакетов в секунду
         self.Platform = []
         self.ExtendedNames = ''
+        self.XorSeedIndex = 0
 
     def ParseHeader(self, pathfile):
         f = open(pathfile, 'rb')
-        header =f.read(sconfig.HeaderSize)
+        header = bytearray(f.read(sconfig.HeaderSize))
         if len(header) < len(sconfig.FileSignature):
             print(sconfig.CannotReadHeader)
             return False
@@ -32,13 +33,43 @@ class SignalHeader:
         if signature != sconfig.FileSignature:
             print(sconfig.UnknownFormat)
             return False
+        self.ResetXorIndex()
+        #start = size Header Signature + size Header Version + size Header DataCRC32
+        start = sconfig.SizeHeaderSignature + sconfig.SizeHeaderVersion + sconfig.SizeHeaderDataCRC32
+        for idx in range(start, sconfig.HeaderSize):
+            header[idx] = header[idx] ^ self.GetXorByte()
         s = struct.Struct('<4s b I I I b b b ' + str(sconfig.MaxCanals) + 'b d ' +
                           str(sconfig.LongStringMaxSize) + 's ' + str(sconfig.LongStringMaxSize) + 's ' +
                           str(sconfig.ShortStringMaxSize) + 's ' + str(sconfig.ShortStringMaxSize) + 's i')
-        print(len(header))
         data = s.unpack_from(header)
+        self.Signature = data[0]
+        self.Version = data[1]
+        self.DataCRC32 = data[2]
+        self.HeaderCRC32 = data[3]
+        self.DataOffset = data[4]
+        self.Compressed = data[5]
+        self.ExtendedCanals = data[6]
+        self.Platforms = data[7]
+        self.Canals = data[8:18]
+        self.StartDateTime = data[18]
+        self.Firm = data[19].decode('cp1251')
+        self.ScalesName = data[20].decode('cp1251')
+        self.ScalesType = data[21].decode('cp1251')
+        self.ConverterType = data[22].decode('cp1251')
+        self.PacketsPerSecond = data[23]
+        for i in range(0, sconfig.MaxPlatforms):
+                pass
         return True
 
+    def GetXorByte(self):
+        xor = int(ord(sconfig.XORSeed[self.XorSeedIndex].encode('cp1251')) ^ sconfig.XORMask)
+        self.XorSeedIndex += 1
+        if self.XorSeedIndex >= len(sconfig.XORSeed):
+            self.XorSeedIndex = 0
+        return xor
+
+    def ResetXorIndex(self):
+        self.XorSeedIndex = 0
 
 
 class PlatformCalcDataRec:
