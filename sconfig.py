@@ -73,6 +73,7 @@ ExtendedDataError = 'Неверные параметры функции уста
 SizeHeaderSignature = 4 # размер  поля сигнатуры файла
 SizeHeaderVersion = 1 # размер поля версии
 SizeHeaderDataCRC32 = 4 # размер поля DataCRC32
+SizeHeaderHeaderCRC32 = 4 # размер поля HeaderCRC32
 
 # корректировочная маска для невидимости реальной маски в памяти
 XORMask = 0xAA
