@@ -20,8 +20,10 @@ class SignalHeader:
         self.ConverterType = '' # тип преобразователя
         self.PacketsPerSecond = 0 # скорость пакетов в секунду
         self.Platform = []
-        self.ExtendedNames = ''
+        self.ExtendedNames = []
         self.XorSeedIndex = 0
+        self.CRC32Bytes = []
+        self.GetCRC32Bytes()
 
     def ParseHeader(self, pathfile):
         f = open(pathfile, 'rb')
@@ -34,7 +36,6 @@ class SignalHeader:
             print(sconfig.UnknownFormat)
             return False
         self.ResetXorIndex()
-        #start = size Header Signature + size Header Version + size Header DataCRC32
         start = sconfig.SizeHeaderSignature + sconfig.SizeHeaderVersion + sconfig.SizeHeaderDataCRC32
         for idx in range(start, sconfig.HeaderSize):
             header[idx] = header[idx] ^ self.GetXorByte()
@@ -42,6 +43,13 @@ class SignalHeader:
                           str(sconfig.LongStringMaxSize) + 's ' + str(sconfig.LongStringMaxSize) + 's ' +
                           str(sconfig.ShortStringMaxSize) + 's ' + str(sconfig.ShortStringMaxSize) + 's i')
         data = s.unpack_from(header)
+        headeroffset = sconfig.SizeHeaderSignature + sconfig.SizeHeaderVersion + \
+                        sconfig.SizeHeaderDataCRC32 + sconfig.SizeHeaderHeaderCRC32
+
+        crc32header = self.CRC32FromBuffer(header[headeroffset:sconfig.HeaderSize])
+        if data[3] != crc32header:
+            print(sconfig.BrokenHeader)
+            return False
         self.Signature = data[0]
         self.Version = data[1]
         self.DataCRC32 = data[2]
@@ -58,7 +66,12 @@ class SignalHeader:
         self.ConverterType = data[22].decode('cp1251')
         self.PacketsPerSecond = data[23]
         for i in range(0, sconfig.MaxPlatforms):
-                pass
+                self.Platform.append(self.GetPlatformCalcDataRec(header[s.size + sconfig.PlatformCalcDataRecSize*i:
+                                                   s.size + sconfig.PlatformCalcDataRecSize*(i+1)]))
+        offset = header[s.size + sconfig.PlatformCalcDataRecSize*sconfig.MaxPlatforms : sconfig.HeaderSize]
+        for i in range(0, sconfig.MaxExtendedCanals):
+            self.ExtendedNames.append(offset[sconfig.ShortStringMaxSize*i:
+                                             sconfig.ShortStringMaxSize*(i+1)].decode('cp1251'))
         return True
 
     def GetXorByte(self):
@@ -71,6 +84,49 @@ class SignalHeader:
     def ResetXorIndex(self):
         self.XorSeedIndex = 0
 
+
+    def GetPlatformCalcDataRec(self, buff):
+        s = struct.Struct('<i i i i i i i i i i i i i 4d 4d 28d 4d')
+        data = s.unpack_from(buff)
+        pr = PlatformCalcDataRec()
+        pr.Length = data[0]
+        pr.NearLeftCanal = data[1]
+        pr.FarLeftCanal = data[2]
+        pr.FarRightCanal = data[3]
+        pr.NearRightCanal = data[4]
+        pr.Canal1NullCode = data[5]
+        pr.Canal2NullCode = data[6]
+        pr.Canal3NullCode = data[7]
+        pr.Canal4NullCode = data[8]
+        pr.Canal1ExemplaryNullCode = data[9]
+        pr.Canal2ExemplaryNullCode = data[10]
+        pr.Canal3ExemplaryNullCode = data[11]
+        pr.Canal4ExemplaryNullCode = data[12]
+        pr.ChTK = data[13:17]
+        pr.ChTN = data[17:21]
+        for i in range(0, 4):
+            pr.Alpha.append(data[21+i*7:21+(i+1)*7])
+        pr.Chk = data[49:53]
+        return pr
+
+    def GetCRC32Bytes(self):
+        #создание массива байт для учета позиции при расчете CRC32
+        for byte in range(256):
+            crc = 0
+            for bit in range(8):
+                if (byte ^ crc) & 1:
+                    crc = (crc >> 1) ^ sconfig.CRC32Poly
+                else:
+                    crc >>= 1
+                byte >>= 1
+            self.CRC32Bytes.append(crc)
+
+    def CRC32FromBuffer(self, buffer):
+        value = 0xffffffff
+        for ch in buffer:
+            value = self.CRC32Bytes[(ch ^ value) & 0x000000ff] ^ (value >> 8)
+        value = ~value & 0xffffffff
+        return value
 
 class PlatformCalcDataRec:
     def __init__(self):
