@@ -28,6 +28,7 @@ class SignalHeader:
     def ParseHeader(self, pathfile):
         f = open(pathfile, 'rb')
         header = bytearray(f.read(sconfig.HeaderSize))
+        f.close()
         if len(header) < len(sconfig.FileSignature):
             print(sconfig.CannotReadHeader)
             return False
@@ -73,6 +74,12 @@ class SignalHeader:
             self.ExtendedNames.append(offset[sconfig.ShortStringMaxSize*i:
                                              sconfig.ShortStringMaxSize*(i+1)].decode('cp1251'))
         return True
+
+    def ReadADCData(self, pathfile):
+        f = open(pathfile, 'rb')
+        f.seek(self.DataOffset)
+
+        f.close()
 
     def GetXorByte(self):
         xor = int(ord(sconfig.XORSeed[self.XorSeedIndex].encode('cp1251')) ^ sconfig.XORMask)
