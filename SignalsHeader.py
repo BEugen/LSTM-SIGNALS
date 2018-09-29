@@ -4,21 +4,21 @@ import struct
 
 class SignalHeader:
     def __init__(self):
-        self.Signature = '' # сигнатура файла
-        self.Version = 0 # версия формата файла
-        self.DataCRC32 = 0 # проверка данных
-        self.HeaderCRC32 =  0 # проверка заголовка
-        self.DataOffset = 0 # смещение данных от начала файла
-        self.Compressed = False # флаг компрессии
-        self.ExtendedCanals = 0 # АЦП сопровождается расширенными данными
-        self.Platforms = 0 # количество платформ
-        self.Canals = [] # количество датчиков на платформе
-        self.StartDateTime = None # дата и время начала взвешивания
-        self.Firm = '' # название фирмы
-        self.ScalesName = '' # весовая
-        self.ScalesType = '' # тип весов
-        self.ConverterType = '' # тип преобразователя
-        self.PacketsPerSecond = 0 # скорость пакетов в секунду
+        self.Signature = ''  # сигнатура файла
+        self.Version = 0  # версия формата файла
+        self.DataCRC32 = 0  # проверка данных
+        self.HeaderCRC32 = 0  # проверка заголовка
+        self.DataOffset = 0  # смещение данных от начала файла
+        self.Compressed = False  # флаг компрессии
+        self.ExtendedCanals = 0  # АЦП сопровождается расширенными данными
+        self.Platforms = 0  # количество платформ
+        self.Canals = []  # количество датчиков на платформе
+        self.StartDateTime = None  # дата и время начала взвешивания
+        self.Firm = ''  # название фирмы
+        self.ScalesName = ''  # весовая
+        self.ScalesType = ''  # тип весов
+        self.ConverterType = ''  # тип преобразователя
+        self.PacketsPerSecond = 0  # скорость пакетов в секунду
         self.Platform = []
         self.ExtendedNames = []
         self.XorSeedIndex = 0
@@ -45,7 +45,7 @@ class SignalHeader:
                           str(sconfig.ShortStringMaxSize) + 's ' + str(sconfig.ShortStringMaxSize) + 's i')
         data = s.unpack_from(header)
         headeroffset = sconfig.SizeHeaderSignature + sconfig.SizeHeaderVersion + \
-                        sconfig.SizeHeaderDataCRC32 + sconfig.SizeHeaderHeaderCRC32
+                       sconfig.SizeHeaderDataCRC32 + sconfig.SizeHeaderHeaderCRC32
 
         crc32header = self.CRC32FromBuffer(header[headeroffset:sconfig.HeaderSize])
         if data[3] != crc32header:
@@ -67,12 +67,13 @@ class SignalHeader:
         self.ConverterType = data[22].decode('cp1251')
         self.PacketsPerSecond = data[23]
         for i in range(0, sconfig.MaxPlatforms):
-                self.Platform.append(self.GetPlatformCalcDataRec(header[s.size + sconfig.PlatformCalcDataRecSize*i:
-                                                   s.size + sconfig.PlatformCalcDataRecSize*(i+1)]))
-        offset = header[s.size + sconfig.PlatformCalcDataRecSize*sconfig.MaxPlatforms : sconfig.HeaderSize]
+            self.Platform.append(self.GetPlatformCalcDataRec(header[s.size + sconfig.PlatformCalcDataRecSize * i:
+                                                                    s.size + sconfig.PlatformCalcDataRecSize * (
+                                                                            i + 1)]))
+        offset = header[s.size + sconfig.PlatformCalcDataRecSize * sconfig.MaxPlatforms: sconfig.HeaderSize]
         for i in range(0, sconfig.MaxExtendedCanals):
-            self.ExtendedNames.append(offset[sconfig.ShortStringMaxSize*i:
-                                             sconfig.ShortStringMaxSize*(i+1)].decode('cp1251'))
+            self.ExtendedNames.append(offset[sconfig.ShortStringMaxSize * i:
+                                             sconfig.ShortStringMaxSize * (i + 1)].decode('cp1251'))
         return True
 
     def ReadADCData(self, pathfile):
@@ -90,7 +91,6 @@ class SignalHeader:
 
     def ResetXorIndex(self):
         self.XorSeedIndex = 0
-
 
     def GetPlatformCalcDataRec(self, buff):
         s = struct.Struct('<i i i i i i i i i i i i i 4d 4d 28d 4d')
@@ -112,12 +112,12 @@ class SignalHeader:
         pr.ChTK = data[13:17]
         pr.ChTN = data[17:21]
         for i in range(0, 4):
-            pr.Alpha.append(data[21+i*7:21+(i+1)*7])
+            pr.Alpha.append(data[21 + i * 7:21 + (i + 1) * 7])
         pr.Chk = data[49:53]
         return pr
 
     def GetCRC32Bytes(self):
-        #создание массива байт для учета позиции при расчете CRC32
+        # создание массива байт для учета позиции при расчете CRC32
         for byte in range(256):
             crc = 0
             for bit in range(8):
@@ -135,24 +135,92 @@ class SignalHeader:
         value = ~value & 0xffffffff
         return value
 
+
 class PlatformCalcDataRec:
     def __init__(self):
-    # структура с данными для рассчета по платформе
-        self.Length = 0 # длинна ГПУ
-        self.NearLeftCanal = 0 # № канала левого ближнего датчика
-        self.FarLeftCanal = 0 # № канала левого дальнего датчика
-        self.FarRightCanal = 0 # № канала правого дальнего датчика
-        self.NearRightCanal = 0 # № канала правого ближнего датчика
-        self.Canal1NullCode = 0 # текущий код нуля канала №1
-        self.Canal2NullCode = 0 # текущий код нуля канала №2
-        self.Canal3NullCode = 0 # текущий код нуля канала №3
-        self.Canal4NullCode = 0 # текущий код нуля канала №4
-        self.Canal1ExemplaryNullCode = 0 # образцовый код нуля канала №1
-        self.Canal2ExemplaryNullCode = 0 # образцовый код нуля канала №2
-        self.Canal3ExemplaryNullCode = 0 # образцовый код нуля канала №3
-        self.Canal4ExemplaryNullCode = 0 # образцовый код нуля канала №4
-        self.ChTK = [] # массив коэффициентов по каналам
-        self.ChTN = [] # массив коэффициентов по каналам
-        self.Alpha = [] # массив коэффициентов по каналам
-        self.Chk = [] # массив коэффициентов по каналам
+        # структура с данными для рассчета по платформе
+        self.Length = 0  # длинна ГПУ
+        self.NearLeftCanal = 0  # № канала левого ближнего датчика
+        self.FarLeftCanal = 0  # № канала левого дальнего датчика
+        self.FarRightCanal = 0  # № канала правого дальнего датчика
+        self.NearRightCanal = 0  # № канала правого ближнего датчика
+        self.Canal1NullCode = 0  # текущий код нуля канала №1
+        self.Canal2NullCode = 0  # текущий код нуля канала №2
+        self.Canal3NullCode = 0  # текущий код нуля канала №3
+        self.Canal4NullCode = 0  # текущий код нуля канала №4
+        self.Canal1ExemplaryNullCode = 0  # образцовый код нуля канала №1
+        self.Canal2ExemplaryNullCode = 0  # образцовый код нуля канала №2
+        self.Canal3ExemplaryNullCode = 0  # образцовый код нуля канала №3
+        self.Canal4ExemplaryNullCode = 0  # образцовый код нуля канала №4
+        self.ChTK = []  # массив коэффициентов по каналам
+        self.ChTN = []  # массив коэффициентов по каналам
+        self.Alpha = []  # массив коэффициентов по каналам
+        self.Chk = []  # массив коэффициентов по каналам
 
+
+class TasiSignalItem:
+    def __init__(self):
+        self.FPlatforms = 0  # количество платформ в сигнале
+        self.FCanals = []  # количество датчиков на платформе
+        self.FBuffer = []  # буфер
+        self.FBufferSize = 0  # размер буфера
+        self.FOffsets = []  # таблица смещений начала данных по платформам
+        self.FExtended = []  # последняя дискретная информация, бывшая в обработке
+        self.FExtendedCanals = 0  # количество дискретных каналов
+        self.FHaveExtended = False  # найдены ли дискретные данные (для ускорения)
+        self.Values = [] # массив кодов АЦП
+        self.Extended = [] #массив дискретной информации
+        self.Point = 0 # данные точки целиком
+        self.PointSize = 0 # размер массива точки
+        self.Platforms = 0 # количество платформ
+        self.Canals = [] # количество датчиков
+        self.ExtendedCanals = 0 # количество дискретных каналов
+        self.HaveExtended = False # наличие дискретной информации
+        for i in range(0, sconfig.MaxCanals):
+            self.FCanals.append(sconfig.DefaultCanals)
+
+    def init(self):
+        if self.FPlatforms > 0:
+            self.FOffsets = []
+            self.FOffsets.append(0)
+            for i in range(0, self.FPlatforms):
+                self.FOffsets.append(self.FOffsets[i - 1] + sconfig.BytesPerData * self.FCanals[i - 1])
+            self.FBufferSize = self.FOffsets[self.FPlatforms - 1] + \
+                               sconfig.BytesPerData * self.FCanals[self.FPlatforms - 1]
+        else:
+            self.FBufferSize = 0
+
+    def getvalue(self, platform, canal):
+        if platform >= self.Platforms:
+            return
+        if platform < 0:
+            return
+        if canal >= self.Canals[platform]:
+            return
+        if canal < 0:
+            return
+        # определение смещения
+        index = self.FOffsets[platform] + canal * sconfig.BytesPerData
+        return self.FBuffer[index]
+
+    def getvalueex(self, platform, canal):
+        # чтение кода АЦП и дискреных данных
+        if platform >= self.Platforms:
+            return
+        if platform < 0:
+            return
+        if canal >= self.Canals[platform]:
+            return
+        if canal < 0:
+            return
+        # определение смещения
+        index = self.FOffsets[platform] + canal * sconfig.BytesPerData
+        result = self.FBuffer[index]
+        # если есть дискретные данных по платформе, сигналу
+        if self.FHaveExtended:
+            for i in range(0, sconfig.MaxExtendedDataSize):
+                if self.FExtended[platform][canal][i]:
+                    if self.Extended:
+                        extended = self.FExtended[platform][canal]
+                        return result, extended
+        return result, None
