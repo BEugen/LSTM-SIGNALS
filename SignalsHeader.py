@@ -76,12 +76,6 @@ class SignalHeader:
                                              sconfig.ShortStringMaxSize * (i + 1)].decode('cp1251'))
         return True
 
-    def ReadADCData(self, pathfile):
-        f = open(pathfile, 'rb')
-        f.seek(self.DataOffset)
-
-        f.close()
-
     def GetXorByte(self):
         xor = int(ord(sconfig.XORSeed[self.XorSeedIndex].encode('cp1251')) ^ sconfig.XORMask)
         self.XorSeedIndex += 1
@@ -170,7 +164,7 @@ class AsiSignalItem:
         self.FHaveExtended = False  # найдены ли дискретные данные (для ускорения)
         self.Values = [] # массив кодов АЦП
         self.Extended = [] #массив дискретной информации
-        self.Point = 0 # данные точки целиком
+        self.Point = [] # данные точки целиком
         self.PointSize = 0 # размер массива точки
         self.Platforms = 0 # количество платформ
         self.Canals = [] # количество датчиков
@@ -226,6 +220,51 @@ class AsiSignalItem:
         return result, None
 
 
+class AsiExtendedData:
+    def __init__(self):
+        self.Index = 0
+        self.Platform = 0
+        self.Canal = 0
+        self.Id = 0
+        self.Value = 0
+
+
 class AsiSignal:
     def __init__(self):
-        pass
+        self.Header = SignalHeader()
+        self.PointBuffer = []
+        self.Diff = []
+        self.PointIndex = 0
+        self.Point = []
+        self.Extended = []
+        self.Item = AsiSignalItem()
+        self.PointBufferSize = 0
+        self.PointBufferIntSize = 0
+
+    def readheader(self, pathfile):
+        return self.Header.ParseHeader(pathfile)
+
+    def readadcdata(self, pathfile):
+        f = open(pathfile, 'rb')
+        f.seek(self.Header.DataOffset)
+        f.close()
+
+    def itemreinit(self):
+        self.Item.init()
+        self.PointBuffer = self.Item.Point
+        self.PointBufferSize = self.Item.PointSize
+        self.PointBufferIntSize = round(self.PointBufferSize / sconfig.BytesPerData)
+        self.Diff = []
+
+    def getpoint(self):
+        valuefound = False
+        for i in range(0, self.PointBufferIntSize):
+
+
+
+
+
+
+
+
+
