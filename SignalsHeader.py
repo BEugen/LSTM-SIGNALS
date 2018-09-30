@@ -241,13 +241,40 @@ class AsiSignal:
         self.PointBufferSize = 0
         self.PointBufferIntSize = 0
 
+    def getdata(self, pathfile):
+        if not self.readheader(pathfile):
+            return None
+        self.readadcdata(pathfile)
+
     def readheader(self, pathfile):
-        return self.Header.ParseHeader(pathfile)
+        if self.Header.ParseHeader(pathfile):
+            self.setextendedcanals(self.Header.ExtendedCanals)
+            self.setplatforms(self.Header.Platform)
+            return True
+        return False
 
     def readadcdata(self, pathfile):
         f = open(pathfile, 'rb')
         f.seek(self.Header.DataOffset)
+
         f.close()
+
+    def setextendedcanals(self, value):
+        if value > sconfig.MaxExtendedCanals - 1:
+            print(sconfig.CannotChangeExtendedCanals)
+        if self.Item.FExtendedCanals == value:
+            return
+        self.Item.FExtendedCanals = value
+        self.itemreinit()
+
+    def setplatforms(self, value):
+        if value < 0 or value > sconfig.MaxPlatforms:
+            print(sconfig.CannotChangePlatforms)
+            return
+        if self.Item.FPlatforms == value:
+            return
+        self.Item.FPlatforms = value
+        self.itemreinit()
 
     def itemreinit(self):
         self.Item.init()
