@@ -158,7 +158,7 @@ class PlatformCalcDataRec:
         self.Chk = []  # массив коэффициентов по каналам
 
 
-class TasiSignalItem:
+class AsiSignalItem:
     def __init__(self):
         self.FPlatforms = 0  # количество платформ в сигнале
         self.FCanals = []  # количество датчиков на платформе
@@ -224,3 +224,8 @@ class TasiSignalItem:
                         extended = self.FExtended[platform][canal]
                         return result, extended
         return result, None
+
+
+class AsiSignal:
+    def __init__(self):
+        pass
