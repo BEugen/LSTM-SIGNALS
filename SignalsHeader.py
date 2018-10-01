@@ -1,6 +1,7 @@
 import sconfig
 import struct
 import os
+from datetime import timedelta, datetime
 
 class SignalHeader:
     def __init__(self):
@@ -62,7 +63,9 @@ class SignalHeader:
         self.ExtendedCanals = data[6]
         self.Platforms = data[7]
         self.Canals = data[8:18]
-        self.StartDateTime = data[18]
+        dt = datetime(1899, 12, 30)
+        dt = dt + timedelta(days=data[18])
+        self.StartDateTime = dt
         self.Firm = data[19].decode('cp1251')
         self.ScalesName = data[20].decode('cp1251')
         self.ScalesType = data[21].decode('cp1251')
