@@ -1,6 +1,6 @@
 import sconfig
 import struct
-
+import os
 
 class SignalHeader:
     def __init__(self):
@@ -24,8 +24,10 @@ class SignalHeader:
         self.XorSeedIndex = 0
         self.CRC32Bytes = []
         self.GetCRC32Bytes()
+        self.FileSize = 0
 
     def ParseHeader(self, pathfile):
+        self.FileSize = os.path.getsize(pathfile)
         f = open(pathfile, 'rb')
         header = bytearray(f.read(sconfig.HeaderSize))
         f.close()
@@ -181,15 +183,18 @@ class AsiSignalItem:
                 self.FOffsets.append(self.FOffsets[i - 1] + sconfig.BytesPerData * self.FCanals[i - 1])
             self.FBufferSize = self.FOffsets[self.FPlatforms - 1] + \
                                sconfig.BytesPerData * self.FCanals[self.FPlatforms - 1]
+            self.FBuffer = [0 for _ in range(self.FBufferSize)]
+            self.Point = self.FBuffer
+            self.PointSize = self.FBufferSize
         else:
             self.FBufferSize = 0
 
     def getvalue(self, platform, canal):
-        if platform >= self.Platforms:
+        if platform >= self.FPlatforms:
             return
         if platform < 0:
             return
-        if canal >= self.Canals[platform]:
+        if canal >= self.FCanals[platform]:
             return
         if canal < 0:
             return
@@ -229,6 +234,12 @@ class AsiExtendedData:
         self.Value = 0
 
 
+class AsiReferenceFrame:
+    def __init__(self):
+        self.Signature = 0
+        self.Id = 0
+        self.Value = 0
+
 class AsiSignal:
     def __init__(self):
         self.Header = SignalHeader()
@@ -240,6 +251,13 @@ class AsiSignal:
         self.Item = AsiSignalItem()
         self.PointBufferSize = 0
         self.PointBufferIntSize = 0
+        self.FileBufferSize = 0
+        self.FileBufferStart = 0
+        self.FileHandle = None
+        self.FileBuffer = None
+        self.FilePosition = 0
+        self.EOF = False
+        self.FileSize = 0
 
     def getdata(self, pathfile):
         if not self.readheader(pathfile):
@@ -249,15 +267,23 @@ class AsiSignal:
     def readheader(self, pathfile):
         if self.Header.ParseHeader(pathfile):
             self.setextendedcanals(self.Header.ExtendedCanals)
-            self.setplatforms(self.Header.Platform)
+            self.setplatforms(self.Header.Platforms)
+            self.FilePosition = self.Header.DataOffset
+            self.FileSize = self.Header.FileSize
             return True
         return False
 
     def readadcdata(self, pathfile):
+        pointindex = 0
         f = open(pathfile, 'rb')
-        f.seek(self.Header.DataOffset)
-
-        f.close()
+        f.seek(self.FilePosition)
+        self.FileHandle = f
+        while not self.EOF:
+            if self.getpoint():
+                for k in range(0, self.Header.Platforms):
+                    for j in range(0, self.Header.Canals[k]):
+                        print(k, j, self.Item.getvalue(k, j))
+        self.FileHandle.close()
 
     def setextendedcanals(self, value):
         if value > sconfig.MaxExtendedCanals - 1:
@@ -283,9 +309,82 @@ class AsiSignal:
         self.PointBufferIntSize = round(self.PointBufferSize / sconfig.BytesPerData)
         self.Diff = []
 
+    def fetchfrombuffer(self, buffer, size):
+        result = True
+        canfetch = self.FileBufferSize - self.FileBufferStart
+        fetched = 0
+        if canfetch > 0:
+            if canfetch >= size:
+                fetched = size
+            else:
+                fetched = canfetch
+            curpos = self.FileBufferStart
+            for i in range(curpos, curpos+fetched):
+                buffer.append(self.FileBuffer[i])
+            self.FileBufferStart += fetched
+        if canfetch < size:
+            self.cleanbuffer()
+            curpos = self.FileBufferStart
+            size -= fetched
+            curpos += fetched
+            self.FileBufferSize = self.readfrombuffer()
+            canfetch = self.FileBufferSize - self.FileBufferStart
+            if canfetch > 0:
+                if canfetch < size:
+                    fetched = canfetch
+                    result = False
+                else:
+                    fetched = size
+                for i in range(curpos, curpos + fetched):
+                    buffer.append(self.FileBuffer[i])
+                self.FileBufferStart += fetched
+            else:
+                result = False
+        return result
+
+    def cleanbuffer(self):
+        self.FileBufferSize = 0
+        self.FileBufferStart = 0
+
     def getpoint(self):
-        valuefound = False
+        result = True
+        source = self.PointBuffer
+        ind = 0
         for i in range(0, self.PointBufferIntSize):
+            extpacket = []
+            valuefound = False
+            while not valuefound:
+                size = 1
+                self.FilePosition += size
+                if not self.fetchfrombuffer(extpacket, size):
+                    return False
+                if extpacket[0] == sconfig.ReferenceFrameSignature:
+                    size = sconfig.SizeAsiReferenceFrame - 1
+                    self.FilePosition += size
+                    if not self.fetchfrombuffer(extpacket, size):
+                        return False
+                    if extpacket[1] == sconfig.ReferenceFrameID:
+                        s = struct.Struct('<i')
+                        value = s.unpack_from(bytearray(extpacket[2:6]))
+                        source[ind] = value[0]
+                        valuefound = True
+                    else:
+                        pass
+                else:
+                    dx = int(extpacket[0])
+                    source[ind] = self.Diff[ind] + dx
+                    valuefound = True
+                ind += 1
+        self.Diff[0:self.PointBufferSize] = source[0:self.PointBufferSize]
+        if self.FilePosition >= self.FileSize:
+            self.EOF = True
+        return result
+
+    def readfrombuffer(self):
+        if self.FileHandle:
+            self.FileBuffer = bytearray(self.FileHandle.read(sconfig.DefaultFileBufferSize))
+            return sconfig.DefaultFileBufferSize
+
 
 
 

@@ -25,6 +25,7 @@ ReferenceFrameSignature = 0x80 # сигнатура опорного кадра 
 #
 HeaderSize = 2330
 PlatformCalcDataRecSize = 372
+DefaultFileBufferSize = 2048
 
 # *******************************************
 #    идентификаторы дискретных каналов
@@ -74,6 +75,7 @@ SizeHeaderSignature = 4 # размер  поля сигнатуры файла
 SizeHeaderVersion = 1 # размер поля версии
 SizeHeaderDataCRC32 = 4 # размер поля DataCRC32
 SizeHeaderHeaderCRC32 = 4 # размер поля HeaderCRC32
+SizeAsiReferenceFrame = 6
 
 # корректировочная маска для невидимости реальной маски в памяти
 XORMask = 0xAA
