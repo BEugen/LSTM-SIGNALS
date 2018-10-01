@@ -2,9 +2,9 @@ import  SignalsHeader
 
 
 def main():
-    SigHeader = SignalsHeader.SignalHeader()
+    Sig = SignalsHeader.AsiSignal()
     path = 'test.sig'
-    result = SigHeader.ParseHeader(path)
+    result = Sig.getdata(path)
     return result
 
 
