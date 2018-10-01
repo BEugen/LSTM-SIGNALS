@@ -199,7 +199,7 @@ class AsiSignalItem:
         if canal < 0:
             return
         # определение смещения
-        index = self.FOffsets[platform] + canal * sconfig.BytesPerData
+        index = int(self.FOffsets[platform] / sconfig.BytesPerData) + canal
         return self.FBuffer[index]
 
     def getvalueex(self, platform, canal):
@@ -371,7 +371,7 @@ class AsiSignal:
                     else:
                         pass
                 else:
-                    dx = int(extpacket[0])
+                    dx = self.bytetosigned(extpacket[0])
                     source[ind] = self.Diff[ind] + dx
                     valuefound = True
                 ind += 1
@@ -386,7 +386,11 @@ class AsiSignal:
             return sconfig.DefaultFileBufferSize
 
 
-
+    def bytetosigned(self, byte):
+        if byte > 127:
+            return (256 - byte) * (-1)
+        else:
+            return byte
 
 
 
