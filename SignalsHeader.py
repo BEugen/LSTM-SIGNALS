@@ -2,6 +2,7 @@ import sconfig
 import struct
 import os
 from datetime import timedelta, datetime
+import pandas as pd
 
 class SignalHeader:
     def __init__(self):
@@ -265,7 +266,7 @@ class AsiSignal:
     def getdata(self, pathfile):
         if not self.readheader(pathfile):
             return None
-        self.readadcdata(pathfile)
+        return self.readadcdata(pathfile)
 
     def readheader(self, pathfile):
         if self.Header.ParseHeader(pathfile):
@@ -277,16 +278,27 @@ class AsiSignal:
         return False
 
     def readadcdata(self, pathfile):
-        pointindex = 0
         f = open(pathfile, 'rb')
         f.seek(self.FilePosition)
         self.FileHandle = f
+        addtime = 1 / self.Header.PacketsPerSecond
+        columns = ['datetime']
+        for p in range(0, self.Header.Platforms):
+            for i in range(1, self.Header.Canals[p] + 1):
+                columns.append('p' + str(p + 1) + '_ch' + str(i))
+        dt = self.Header.StartDateTime
+        rows = []
         while not self.EOF:
             if self.getpoint():
+                row = [dt]
                 for k in range(0, self.Header.Platforms):
                     for j in range(0, self.Header.Canals[k]):
-                        print(k, j, self.Item.getvalue(k, j))
+                        row.append(self.Item.getvalue(k, j))
+                    if k == (self.Header.Platforms - 1):
+                        rows.append(row)
+                dt = dt + timedelta(seconds=addtime)
         self.FileHandle.close()
+        return pd.DataFrame(rows, columns=columns)
 
     def setextendedcanals(self, value):
         if value > sconfig.MaxExtendedCanals - 1:
