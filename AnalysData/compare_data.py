@@ -4,16 +4,19 @@ from datetime import timedelta, datetime
 import os
 
 CHANNELS = ['p1_ch1', 'p1_ch2', 'p1_ch3', 'p1_ch4']
+ch_null = {'1': 142, '2': 104, '3': 123, '4': 146}
 def main():
+    i = 1
     for channel in CHANNELS:
         fig, (ax1, ax2, ax3) = plt.subplots(nrows=3, ncols=1, figsize=(20, 10))
-        pd_bed = pd.read_csv('E:/TMP/rs/ep/bax/2018_08_24 14_22_31.csv', sep=';', parse_dates=[1])
+        pd_bed = pd.read_csv('/mnt/data/data/LSTM-RL/rs/ep/bax/2018_08_24 14_22_31.csv', sep=';', parse_dates=[1])
         #ax3.set_ylim(-0.1, 200.0)
-        for file in os.listdir('E:/TMP/rs/ep/gd/'):
+        for file in os.listdir('/mnt/data/data/LSTM-RL/rs/ep/gd/'):
             print(file)
-            pd_good = pd.read_csv('E:/TMP/rs/ep/gd/' + file, sep=';', parse_dates=[1])
+            pd_good = pd.read_csv('/mnt/data/data/LSTM-RL/rs/ep/gd/' + file, sep=';', parse_dates=[1])
             stdtimr = pd_good.iloc[0, 1]
             pd_good['datetime'] = pd_good['datetime'] - stdtimr
+            pd_good[channel] = pd_good[channel] - ch_null[str(i)]
             pd_good['diffb'] = pd_good[channel].diff() * (-1.0 if 'ch1' in channel or 'ch4' in channel else 1.0)
             pd_avg_g = wincurve(pd_good, channel)
             pd_good.plot(x='datetime', y=channel, ax=ax2, color='blue', legend=None)
@@ -21,6 +24,7 @@ def main():
 
         stdtimr = pd_bed.iloc[0, 1]
         pd_bed['datetime'] = pd_bed['datetime'] - stdtimr
+        pd_bed[channel] = pd_bed[channel] - ch_null[str(i)]
         pd_bed['diffb'] = pd_bed[channel].diff() * (-1.0 if 'ch1' in channel or 'ch4' in channel else 1.0)
         pd_avg_b = wincurve(pd_bed, channel)
         print(pd_avg_b.shape)
@@ -34,6 +38,7 @@ def main():
         pd_avg_b.plot(x='datetime', y=channel, ax=ax3, color='red', label='bad ac dy/dx (' + channel + ')')
         #pd_avg_g.plot(x='datetime', y='diffb', ax=ax3, color='green', label='good ac dy/dx')
         plt.show()
+        i+=1
 
 
 def wincurve(data, column):
