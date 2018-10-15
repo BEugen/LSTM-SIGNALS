@@ -2,7 +2,7 @@ import os
 import shutil
 import json
 
-FOLDER_ROOT = '/mnt/data/data/LSTM-RL/rs/'
+FOLDER_ROOT = 'E:/TMP/rs/'
 FOLDER_BSP = 'bsp'
 FOLDER_BAX = 'bax'
 FOLDER_GOOD = 'gd'
