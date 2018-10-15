@@ -1,0 +1,101 @@
+from keras.utils import np_utils
+from keras.models import Sequential
+from keras.optimizers import SGD, Adam, RMSprop
+from keras.layers import LSTM, Dense,Dropout
+from sklearn.preprocessing import MinMaxScaler
+import numpy as np
+from sklearn.metrics import mean_squared_error
+from math import sqrt
+import os
+from keras.callbacks import TensorBoard
+from time import time
+import pandas as pd
+from matplotlib import pyplot
+
+CHANNEL = 3
+LOOP_BACK = 2
+BATCH_SIZE = 100
+NB_EPOCH = 300
+VERBOSE = 1
+OPTIM = Adam()#Adam(lr=INIT_LR, decay=INIT_LR / NB_EPOCH)
+LENGHT = 10
+
+
+def load_data(data):
+    split_size = int(data.shape[0] * 0.8)
+    train = data[0:split_size, :]
+    test = data[split_size:, :]
+    trainX, trainY = create_dataset(train, LOOP_BACK)
+    testX, testY = create_dataset(test, LOOP_BACK)
+    return trainX, testX, trainY, testY
+
+
+def create_dataset(dataset, loopback=1):
+    dataX, dataY = [], []
+    for i in range(len(dataset) - loopback):
+        dataX.append(dataset[i:(i+loopback), 0])
+        dataY.append(dataset[i+loopback, 0])
+    return np.array(dataX), np.array(dataY)
+
+
+def lstm(shape):
+    model = Sequential()
+    model.add(LSTM(100, input_shape=shape))
+    model.add(Dropout(0.5))
+    model.add(Dense(1))
+    return model
+
+
+def main():
+    df = pd.read_csv('railsdataset.csv', sep=';')
+    data = df['p1_ch' + str(CHANNEL)].tolist()
+    data = np.array(data).astype('float32').reshape(-1, 1)
+    print(data.shape)
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    data = scaler.fit_transform(data)
+    X_train, X_test, Y_train, Y_test = load_data(data)
+    print(Y_train.shape)
+    print(Y_test.shape)
+    X_train = np.reshape(X_train, (X_train.shape[0], 1, X_train.shape[1]))
+    X_test = np.reshape(X_test, (X_test.shape[0], 1, X_test.shape[1]))
+    #tensorboard = TensorBoard(log_dir="logs/{}".format(time()), write_graph=True, write_grads=True, write_images=True,
+    #                          histogram_freq=0)
+    # fit
+    model = lstm((X_train.shape[1], X_train.shape[2]))
+    model.compile(loss='mae', optimizer=OPTIM)
+    history = model.fit(X_train, Y_train, batch_size=BATCH_SIZE, epochs=NB_EPOCH, verbose=VERBOSE,
+                        validation_data=(X_test, Y_test),
+                        shuffle=False) #callbacks=[tensorboard]
+    pyplot.plot(history.history['loss'], label='train')
+    pyplot.plot(history.history['val_loss'], label='test')
+    pyplot.legend()
+    pyplot.show()
+
+    yhat = model.predict(X_test)
+    pyplot.plot(yhat, label='predict')
+    pyplot.plot(Y_test, label='true')
+    pyplot.legend()
+    pyplot.show()
+
+    yhat_inverse = scaler.inverse_transform(yhat.reshape(-1, 1))
+    testY_inverse = scaler.inverse_transform(Y_test.reshape(-1, 1))
+    rmse = sqrt(mean_squared_error(testY_inverse, yhat_inverse))
+    print('Test RMSE: %.3f' % rmse)
+    pyplot.plot(yhat_inverse[200:500], label='predict')
+    pyplot.plot(testY_inverse[200:500], label='actual', alpha=0.5)
+    pyplot.legend()
+    pyplot.show(figsize=(20, 10))
+    #score = model.evaluate(X_test, Y_test, verbose=VERBOSE)
+    #print('Test score:', score[0])
+    #print('Test accuracy', score[1])
+
+    # save model
+    #model_json = model.to_json()
+    #with open("model_ln_4.json", "w") as json_file:
+    #    json_file.write(model_json)
+        #serialize weights to HDF5
+    #model.save_weights("model_ln_4.h5")
+
+
+if __name__ == '__main__':
+    main()
