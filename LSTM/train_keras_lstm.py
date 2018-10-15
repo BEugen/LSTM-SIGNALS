@@ -12,8 +12,8 @@ from time import time
 import pandas as pd
 from matplotlib import pyplot
 
-CHANNEL = 3
-LOOP_BACK = 2
+CHANNEL = 2
+LOOP_BACK = 50
 BATCH_SIZE = 100
 NB_EPOCH = 300
 VERBOSE = 1
@@ -21,12 +21,12 @@ OPTIM = Adam()#Adam(lr=INIT_LR, decay=INIT_LR / NB_EPOCH)
 LENGHT = 10
 
 
-def load_data(data):
+def load_data(data, loop_back=1):
     split_size = int(data.shape[0] * 0.8)
     train = data[0:split_size, :]
     test = data[split_size:, :]
-    trainX, trainY = create_dataset(train, LOOP_BACK)
-    testX, testY = create_dataset(test, LOOP_BACK)
+    trainX, trainY = create_dataset(train, loop_back)
+    testX, testY = create_dataset(test, loop_back)
     return trainX, testX, trainY, testY
 
 
@@ -53,7 +53,7 @@ def main():
     print(data.shape)
     scaler = MinMaxScaler(feature_range=(0, 1))
     data = scaler.fit_transform(data)
-    X_train, X_test, Y_train, Y_test = load_data(data)
+    X_train, X_test, Y_train, Y_test = load_data(data, LOOP_BACK)
     print(Y_train.shape)
     print(Y_test.shape)
     X_train = np.reshape(X_train, (X_train.shape[0], 1, X_train.shape[1]))
@@ -81,21 +81,28 @@ def main():
     testY_inverse = scaler.inverse_transform(Y_test.reshape(-1, 1))
     rmse = sqrt(mean_squared_error(testY_inverse, yhat_inverse))
     print('Test RMSE: %.3f' % rmse)
-    pyplot.plot(yhat_inverse[200:500], label='predict')
-    pyplot.plot(testY_inverse[200:500], label='actual', alpha=0.5)
+    #yhat_inverse = np.roll(yhat_inverse, -1)
+    pyplot.plot(yhat_inverse[200:300], label='predict')
+    pyplot.plot(testY_inverse[200:300], label='actual', alpha=0.5)
     pyplot.legend()
     pyplot.show(figsize=(20, 10))
-    #score = model.evaluate(X_test, Y_test, verbose=VERBOSE)
-    #print('Test score:', score[0])
-    #print('Test accuracy', score[1])
 
-    # save model
-    #model_json = model.to_json()
-    #with open("model_ln_4.json", "w") as json_file:
-    #    json_file.write(model_json)
-        #serialize weights to HDF5
-    #model.save_weights("model_ln_4.h5")
-
+    df = pd.read_csv('railsdataset_bad.csv', sep=';')
+    data = df['p1_ch' + str(CHANNEL)].tolist()
+    data = np.array(data).astype('float32').reshape(-1, 1)
+    print(data.shape)
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    data = scaler.fit_transform(data)
+    X_train_b, X_test_b, Y_train_b, Y_test_b = load_data(data, LOOP_BACK)
+    X_train_b = np.reshape(X_train_b, (X_train_b.shape[0], 1, X_train_b.shape[1]))
+    yhat = model.predict(X_train_b)
+    yhat_inverse = scaler.inverse_transform(yhat.reshape(-1, 1))
+    testY_inverse = scaler.inverse_transform(Y_train_b.reshape(-1, 1))
+    #yhat_inverse = np.roll(yhat_inverse, -1)
+    pyplot.plot(yhat_inverse, label='predict')
+    pyplot.plot(testY_inverse, label='actual', alpha=0.5)
+    pyplot.legend()
+    pyplot.show(figsize=(20, 10))
 
 if __name__ == '__main__':
     main()
