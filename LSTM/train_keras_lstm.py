@@ -13,7 +13,7 @@ import pandas as pd
 from matplotlib import pyplot
 
 CHANNEL = 1
-LOOP_BACK = 50
+LOOP_BACK = 100
 BATCH_SIZE = 100
 NB_EPOCH = 600
 VERBOSE = 1
@@ -40,12 +40,10 @@ def create_dataset(dataset, loopback=1):
 
 def lstm(shape):
     model = Sequential()
-    model.add(LSTM(output_dim=50, input_shape=shape, return_sequences=True))
-    model.add(Dropout(0.5))
-    model.add(LSTM(256))
+    model.add(LSTM(100, input_shape=shape))
     model.add(Dropout(0.5))
     model.add(Dense(1))
-    #model.add(Activation('sigmoid'))
+    model.add(Activation('sigmoid'))
     return model
 
 
@@ -100,10 +98,15 @@ def main():
     yhat_inverse = scaler.inverse_transform(yhat.reshape(-1, 1))
     testY_inverse = scaler.inverse_transform(Y_train_b.reshape(-1, 1))
     #yhat_inverse = np.roll(yhat_inverse, -1*LOOP_BACK)
-    sq = np.multiply(np.power(yhat_inverse - testY_inverse, 2), 0.3)
+    yha_diff = np.diff(yhat_inverse.reshape(1, -1))
+    testY_diff = np.diff(testY_inverse.reshape(1, -1))
+    sq = (np.diff(yha_diff) - np.diff(testY_diff)).reshape(-1, 1)
     pyplot.plot(yhat_inverse, label='predict')
     pyplot.plot(testY_inverse, label='actual', alpha=0.5)
-    #pyplot.plot(sq, label='sq')
+    #pyplot.plot(sq[500:1200], label='sq')
+    pyplot.legend()
+    pyplot.show(figsize=(20, 10))
+    pyplot.plot(sq, label='sq')
     pyplot.legend()
     pyplot.show(figsize=(20, 10))
 

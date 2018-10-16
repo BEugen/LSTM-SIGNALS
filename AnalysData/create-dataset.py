@@ -5,8 +5,8 @@ import json
 
 column = ['p1_ch1', 'p1_ch2', 'p1_ch3', 'p1_ch4']
 ch_null = {'1': 142, '2': 104, '3': 123, '4': 146}
-PATH_JSON = '/mnt/data/data/LSTM-RL/rs/jsn/'
-PATH_FILE = '/mnt/data/data/LSTM-RL/rs/ep/gd/'#'E:/TMP/rs/ep/gd/'
+PATH_JSON = 'E:/TMP/rs/jsn/'
+PATH_FILE = 'E:/TMP/rs/ep/bax/'#'E:/TMP/rs/ep/gd/'
 
 def main():
     dataset = pd.DataFrame([], columns=column)
