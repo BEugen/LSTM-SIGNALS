@@ -1,7 +1,7 @@
 from keras.utils import np_utils
 from keras.models import Sequential
 from keras.optimizers import SGD, Adam, RMSprop
-from keras.layers import LSTM, Dense,Dropout
+from keras.layers import LSTM, Dense, Dropout, Activation
 from sklearn.preprocessing import MinMaxScaler
 import numpy as np
 from sklearn.metrics import mean_squared_error
@@ -12,12 +12,12 @@ from time import time
 import pandas as pd
 from matplotlib import pyplot
 
-CHANNEL = 2
+CHANNEL = 1
 LOOP_BACK = 50
 BATCH_SIZE = 100
-NB_EPOCH = 300
+NB_EPOCH = 600
 VERBOSE = 1
-OPTIM = Adam()#Adam(lr=INIT_LR, decay=INIT_LR / NB_EPOCH)
+OPTIM = RMSprop()#Adam(lr=INIT_LR, decay=INIT_LR / NB_EPOCH)
 LENGHT = 10
 
 
@@ -40,9 +40,12 @@ def create_dataset(dataset, loopback=1):
 
 def lstm(shape):
     model = Sequential()
-    model.add(LSTM(100, input_shape=shape))
+    model.add(LSTM(output_dim=50, input_shape=shape, return_sequences=True))
+    model.add(Dropout(0.5))
+    model.add(LSTM(256))
     model.add(Dropout(0.5))
     model.add(Dense(1))
+    #model.add(Activation('sigmoid'))
     return model
 
 
@@ -54,8 +57,6 @@ def main():
     scaler = MinMaxScaler(feature_range=(0, 1))
     data = scaler.fit_transform(data)
     X_train, X_test, Y_train, Y_test = load_data(data, LOOP_BACK)
-    print(Y_train.shape)
-    print(Y_test.shape)
     X_train = np.reshape(X_train, (X_train.shape[0], 1, X_train.shape[1]))
     X_test = np.reshape(X_test, (X_test.shape[0], 1, X_test.shape[1]))
     #tensorboard = TensorBoard(log_dir="logs/{}".format(time()), write_graph=True, write_grads=True, write_images=True,
@@ -98,11 +99,14 @@ def main():
     yhat = model.predict(X_train_b)
     yhat_inverse = scaler.inverse_transform(yhat.reshape(-1, 1))
     testY_inverse = scaler.inverse_transform(Y_train_b.reshape(-1, 1))
-    #yhat_inverse = np.roll(yhat_inverse, -1)
+    #yhat_inverse = np.roll(yhat_inverse, -1*LOOP_BACK)
+    sq = np.multiply(np.power(yhat_inverse - testY_inverse, 2), 0.3)
     pyplot.plot(yhat_inverse, label='predict')
     pyplot.plot(testY_inverse, label='actual', alpha=0.5)
+    #pyplot.plot(sq, label='sq')
     pyplot.legend()
     pyplot.show(figsize=(20, 10))
+
 
 if __name__ == '__main__':
     main()
