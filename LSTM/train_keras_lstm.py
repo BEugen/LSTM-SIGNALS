@@ -98,15 +98,18 @@ def main():
     yhat_inverse = scaler.inverse_transform(yhat.reshape(-1, 1))
     testY_inverse = scaler.inverse_transform(Y_train_b.reshape(-1, 1))
     #yhat_inverse = np.roll(yhat_inverse, -1*LOOP_BACK)
-    yha_diff = np.diff(yhat_inverse.reshape(1, -1))
-    testY_diff = np.diff(testY_inverse.reshape(1, -1))
-    sq = (np.diff(yha_diff) - np.diff(testY_diff)).reshape(-1, 1)
+    yha_diff = np.diff(yhat_inverse.reshape(1, -1)).reshape(-1, 1)
+    testY_diff = np.diff(testY_inverse.reshape(1, -1)).reshape(-1, 1)
+    for i in range(len(yha_diff)):
+        yha_diff[i] = 1.0 if yha_diff[i] >= 0 else -1.0
+        testY_diff[i] = 1.0 if testY_diff[i] >= 0 else -1.0
+    sq = np.multiply(yha_diff, testY_diff)
     pyplot.plot(yhat_inverse, label='predict')
     pyplot.plot(testY_inverse, label='actual', alpha=0.5)
     #pyplot.plot(sq[500:1200], label='sq')
     pyplot.legend()
     pyplot.show(figsize=(20, 10))
-    pyplot.plot(sq, label='sq')
+    pyplot.plot(sq[0:300], label='sq')
     pyplot.legend()
     pyplot.show(figsize=(20, 10))
 
