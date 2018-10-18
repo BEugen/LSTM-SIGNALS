@@ -106,12 +106,12 @@ def main():
     #    yha_diff[i] = 1.0 if yha_diff[i] >= 0 else -1.0
     #    testY_diff[i] = 1.0 if testY_diff[i] >= 0 else -1.0
     #sq = np.multiply(yha_diff, testY_diff)
-    pyplot.plot(yhat_inverse[50:250], label='predict')
-    pyplot.plot(testY_inverse[50:250], label='actual', alpha=0.5)
-    pyplot.plot(sq[500:1200], label='sq')
+    pyplot.plot(yhat_inverse[50:350], label='predict')
+    pyplot.plot(testY_inverse[50:350], label='actual', alpha=0.5)
+    pyplot.plot(sq[50:350], label='sq')
     pyplot.legend()
     pyplot.show(figsize=(20, 10))
-    pyplot.plot(sq[50:250], label='sq')
+    pyplot.plot(sq[50:350], label='sq')
     pyplot.legend()
     pyplot.show(figsize=(20, 10))
 
