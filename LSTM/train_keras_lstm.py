@@ -14,7 +14,7 @@ from matplotlib import pyplot
 
 CHANNEL = 1
 LOOP_BACK = 64
-BATCH_SIZE = 100
+BATCH_SIZE = 200
 NB_EPOCH = 100
 VERBOSE = 1
 INIT_LR = 0.01
@@ -99,6 +99,9 @@ def main():
     yhat_inverse = scaler.inverse_transform(yhat.reshape(-1, 1))
     testY_inverse = scaler.inverse_transform(Y_train_b.reshape(-1, 1))
     #yhat_inverse = np.roll(yhat_inverse, -1*LOOP_BACK)
+    a = np.concatenate([yhat_inverse, testY_inverse], axis=1)
+    df = pd.DataFrame(a, columns=['p', 't'])
+    df.to_csv('railsdataset_comp.csv', sep=';', index=False)
     sq = np.sqrt(np.abs(np.subtract(np.power(yhat_inverse, 2), np.power(testY_inverse, 2))))
     #yha_diff = np.diff(yhat_inverse.reshape(1, -1)).reshape(-1, 1)
     #testY_diff = np.diff(testY_inverse.reshape(1, -1)).reshape(-1, 1)
