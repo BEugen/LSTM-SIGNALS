@@ -13,11 +13,12 @@ import pandas as pd
 from matplotlib import pyplot
 
 CHANNEL = 1
-LOOP_BACK = 100
+LOOP_BACK = 64
 BATCH_SIZE = 100
-NB_EPOCH = 600
+NB_EPOCH = 100
 VERBOSE = 1
-OPTIM = RMSprop()#Adam(lr=INIT_LR, decay=INIT_LR / NB_EPOCH)
+INIT_LR = 0.01
+OPTIM = Adam(lr=0.001)
 LENGHT = 10
 
 
@@ -40,10 +41,10 @@ def create_dataset(dataset, loopback=1):
 
 def lstm(shape):
     model = Sequential()
-    model.add(LSTM(100, input_shape=shape))
-    model.add(Dropout(0.5))
+    model.add(LSTM(64, return_sequences=True, input_shape=shape))
+    model.add(Dropout(0.25))
+    model.add(LSTM(64))
     model.add(Dense(1))
-    model.add(Activation('sigmoid'))
     return model
 
 
@@ -98,18 +99,19 @@ def main():
     yhat_inverse = scaler.inverse_transform(yhat.reshape(-1, 1))
     testY_inverse = scaler.inverse_transform(Y_train_b.reshape(-1, 1))
     #yhat_inverse = np.roll(yhat_inverse, -1*LOOP_BACK)
-    yha_diff = np.diff(yhat_inverse.reshape(1, -1)).reshape(-1, 1)
-    testY_diff = np.diff(testY_inverse.reshape(1, -1)).reshape(-1, 1)
-    for i in range(len(yha_diff)):
-        yha_diff[i] = 1.0 if yha_diff[i] >= 0 else -1.0
-        testY_diff[i] = 1.0 if testY_diff[i] >= 0 else -1.0
-    sq = np.multiply(yha_diff, testY_diff)
-    pyplot.plot(yhat_inverse, label='predict')
-    pyplot.plot(testY_inverse, label='actual', alpha=0.5)
-    #pyplot.plot(sq[500:1200], label='sq')
+    sq = np.sqrt(np.abs(np.subtract(np.power(yhat_inverse, 2), np.power(testY_inverse, 2))))
+    #yha_diff = np.diff(yhat_inverse.reshape(1, -1)).reshape(-1, 1)
+    #testY_diff = np.diff(testY_inverse.reshape(1, -1)).reshape(-1, 1)
+    #for i in range(len(yha_diff)):
+    #    yha_diff[i] = 1.0 if yha_diff[i] >= 0 else -1.0
+    #    testY_diff[i] = 1.0 if testY_diff[i] >= 0 else -1.0
+    #sq = np.multiply(yha_diff, testY_diff)
+    pyplot.plot(yhat_inverse[50:250], label='predict')
+    pyplot.plot(testY_inverse[50:250], label='actual', alpha=0.5)
+    pyplot.plot(sq[500:1200], label='sq')
     pyplot.legend()
     pyplot.show(figsize=(20, 10))
-    pyplot.plot(sq[0:300], label='sq')
+    pyplot.plot(sq[50:250], label='sq')
     pyplot.legend()
     pyplot.show(figsize=(20, 10))
 
