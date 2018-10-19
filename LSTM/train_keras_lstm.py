@@ -20,6 +20,7 @@ VERBOSE = 1
 INIT_LR = 0.01
 OPTIM = Adam(lr=0.001)
 LENGHT = 10
+MODEL_NAME = 'lstm-rl'
 
 
 def load_data(data, loop_back=1):
@@ -66,6 +67,11 @@ def main():
     history = model.fit(X_train, Y_train, batch_size=BATCH_SIZE, epochs=NB_EPOCH, verbose=VERBOSE,
                         validation_data=(X_test, Y_test),
                         shuffle=False) #callbacks=[tensorboard]
+    # save model
+    model_json = model.to_json()
+    with open(MODEL_NAME + ".json", "w") as json_file:
+        json_file.write(model_json)
+    model.save_weights(MODEL_NAME + ".h5")
     pyplot.plot(history.history['loss'], label='train')
     pyplot.plot(history.history['val_loss'], label='test')
     pyplot.legend()
@@ -87,7 +93,7 @@ def main():
     pyplot.legend()
     pyplot.show(figsize=(20, 10))
 
-    df = pd.read_csv('railsdataset_bad.csv', sep=';')
+    df = pd.read_csv('railsdataset_good.csv', sep=';')
     data = df['p1_ch' + str(CHANNEL)].tolist()
     data = np.array(data).astype('float32').reshape(-1, 1)
     print(data.shape)

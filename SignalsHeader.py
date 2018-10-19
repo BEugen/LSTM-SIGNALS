@@ -265,7 +265,7 @@ class AsiSignal:
 
     def getdata(self, pathfile):
         if not self.readheader(pathfile):
-            return None
+            return None, None
         return self.readadcdata(pathfile)
 
     def readheader(self, pathfile):
@@ -298,7 +298,7 @@ class AsiSignal:
                         rows.append(row)
                 dt = dt + timedelta(seconds=addtime)
         self.FileHandle.close()
-        return pd.DataFrame(rows, columns=columns)
+        return pd.DataFrame(rows, columns=columns), self.Header.Platform
 
     def setextendedcanals(self, value):
         if value > sconfig.MaxExtendedCanals - 1:
