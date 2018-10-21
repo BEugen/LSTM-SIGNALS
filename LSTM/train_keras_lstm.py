@@ -12,7 +12,7 @@ from time import time
 import pandas as pd
 from matplotlib import pyplot
 
-CHANNEL = 1
+CHANNEL = 2
 LOOP_BACK = 64
 BATCH_SIZE = 200
 NB_EPOCH = 100
@@ -20,7 +20,7 @@ VERBOSE = 1
 INIT_LR = 0.01
 OPTIM = Adam(lr=0.001)
 LENGHT = 10
-MODEL_NAME = 'lstm-rl'
+MODEL_NAME = 'lstm-rl-23'
 
 
 def load_data(data, loop_back=1):
@@ -93,7 +93,7 @@ def main():
     pyplot.legend()
     pyplot.show(figsize=(20, 10))
 
-    df = pd.read_csv('railsdataset_good.csv', sep=';')
+    df = pd.read_csv('railsdataset_bad.csv', sep=';')
     data = df['p1_ch' + str(CHANNEL)].tolist()
     data = np.array(data).astype('float32').reshape(-1, 1)
     print(data.shape)
@@ -109,6 +109,7 @@ def main():
     df = pd.DataFrame(a, columns=['p', 't'])
     df.to_csv('railsdataset_comp.csv', sep=';', index=False)
     sq = np.sqrt(np.abs(np.subtract(np.power(yhat_inverse, 2), np.power(testY_inverse, 2))))
+
     #yha_diff = np.diff(yhat_inverse.reshape(1, -1)).reshape(-1, 1)
     #testY_diff = np.diff(testY_inverse.reshape(1, -1)).reshape(-1, 1)
     #for i in range(len(yha_diff)):
@@ -123,6 +124,7 @@ def main():
     pyplot.plot(sq[50:350], label='sq')
     pyplot.legend()
     pyplot.show(figsize=(20, 10))
+
 
 
 if __name__ == '__main__':
