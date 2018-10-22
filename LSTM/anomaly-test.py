@@ -40,9 +40,9 @@ def create_dataset(dataset, loopback=1):
 def main():
     for file in os.listdir(PATH_FILE):
         if CHANNEL == 2 or CHANNEL == 3:
-            nn_name = 'lstm-rl-23'
+            nn_name = 'lstmbi-rl-23'
         else:
-            nn_name = 'lstm-rl'
+            nn_name = 'lstmbi-rl-14'
 
         df = pd.DataFrame([], columns=column)
         pd_bed = pd.read_csv(PATH_FILE + file, sep=';', parse_dates=[1])

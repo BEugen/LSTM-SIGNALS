@@ -1,7 +1,8 @@
-from keras.utils import np_utils
+from keras import Model, Input
 from keras.models import Sequential
 from keras.optimizers import SGD, Adam, RMSprop
-from keras.layers import LSTM, Dense, Dropout, Activation
+from keras.layers import (LSTM, Dense, Activation, BatchNormalization,
+                      Dropout, Bidirectional, Add)
 from sklearn.preprocessing import MinMaxScaler
 import numpy as np
 from sklearn.metrics import mean_squared_error
@@ -12,15 +13,15 @@ from time import time
 import pandas as pd
 from matplotlib import pyplot
 
-CHANNEL = 2
+CHANNEL = 1
 LOOP_BACK = 64
 BATCH_SIZE = 200
-NB_EPOCH = 100
+NB_EPOCH = 300
 VERBOSE = 1
 INIT_LR = 0.01
 OPTIM = Adam(lr=0.001)
 LENGHT = 10
-MODEL_NAME = 'lstm-rl-23'
+MODEL_NAME = 'lstmbi-rl-23'
 
 
 def load_data(data, loop_back=1):
@@ -49,6 +50,26 @@ def lstm(shape):
     return model
 
 
+def lstmbi(shape):
+    inputs = Input(shape=shape)
+
+    bd_seq = Bidirectional(LSTM(128, return_sequences=True,
+                                kernel_regularizer='l2'),
+                           merge_mode='sum')(inputs)
+    bd_sin = Bidirectional(LSTM(32, return_sequences=True,
+                                kernel_regularizer='l2'),
+                           merge_mode='sum')(bd_seq)
+
+    bd_1 = Bidirectional(LSTM(1, activation='linear'),
+                         merge_mode='sum')(bd_seq)
+    bd_2 = Bidirectional(LSTM(1, activation='tanh'),
+                         merge_mode='sum')(bd_sin)
+    output = Add()([bd_1, bd_2])
+    model = Model(inputs=inputs, outputs=output)
+    return model
+
+
+
 def main():
     df = pd.read_csv('railsdataset.csv', sep=';')
     data = df['p1_ch' + str(CHANNEL)].tolist()
@@ -62,7 +83,7 @@ def main():
     #tensorboard = TensorBoard(log_dir="logs/{}".format(time()), write_graph=True, write_grads=True, write_images=True,
     #                          histogram_freq=0)
     # fit
-    model = lstm((X_train.shape[1], X_train.shape[2]))
+    model = lstmbi((X_train.shape[1], X_train.shape[2]))
     model.compile(loss='mae', optimizer=OPTIM)
     history = model.fit(X_train, Y_train, batch_size=BATCH_SIZE, epochs=NB_EPOCH, verbose=VERBOSE,
                         validation_data=(X_test, Y_test),
