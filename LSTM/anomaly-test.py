@@ -17,17 +17,13 @@ OPTIM = Adam(lr=0.001)
 
 column = ['p1_ch1', 'p1_ch2', 'p1_ch3', 'p1_ch4']
 ch_null = {'1': 142, '2': 104, '3': 123, '4': 146}
-PATH_JSON = '/mnt/data/data/LSTM-RL/rs/jsn/'
-PATH_FILE = '/mnt/data/data/LSTM-RL/rs/ep/bax/'#'E:/TMP/rs/ep/gd/'
+PATH_JSON = 'E:/TMP/rs/jsn/'
+PATH_FILE = 'E:/TMP/rs/ep/bax/'#'E:/TMP/rs/ep/gd/'
 
 
 def load_data(data, loop_back=1):
-    split_size = int(data.shape[0] * 0.8)
-    train = data[0:split_size, :]
-    test = data[split_size:, :]
-    trainX, trainY = create_dataset(train, loop_back)
-    testX, testY = create_dataset(test, loop_back)
-    return trainX, testX, trainY, testY
+    trainX, trainY = create_dataset(data, loop_back)
+    return trainX, trainY
 
 
 def create_dataset(dataset, loopback=1):
@@ -46,14 +42,14 @@ def main():
 
         df = pd.DataFrame([], columns=column)
         pd_bed = pd.read_csv(PATH_FILE + file, sep=';', parse_dates=[1])
-        df = windsmotcha(pd_bed, column)
+        ds = windsmotcha(pd_bed, column)
         ch_null = getnullforchannels(PATH_JSON + os.path.splitext(file)[0] + '.json')
         for i in range(1, 5):
-            df['p1_ch' + str(i)] = df['p1_ch' + str(i)] - ch_null[str(i)]
-        ind = df[df[column] > 50.0].sort_index(ascending=0).first_valid_index()
-        df.drop('datetime', axis=1)
-        print(file, df[column].max())
-        df = df.append(df[0: ind+10].drop('datetime', axis=1))
+            ds['p1_ch' + str(i)] = ds['p1_ch' + str(i)] - ch_null[str(i)]
+        ind = ds[ds[column] > 50.0].sort_index(ascending=0).first_valid_index()
+        ds.drop('datetime', axis=1)
+        print(file, ds[column].max())
+        df = df.append(ds[0: ind+10].drop('datetime', axis=1))
         #dataset.to_csv('railsdataset_bad.csv', sep=';', index=False)
 
         #df = pd.read_csv('railsdataset_bad.csv', sep=';')
@@ -62,7 +58,7 @@ def main():
         print(data.shape)
         scaler = MinMaxScaler(feature_range=(0, 1))
         data = scaler.fit_transform(data)
-        X_train_b, X_test_b, Y_train_b, Y_test_b = load_data(data, LOOP_BACK)
+        X_train_b, Y_train_b = load_data(data, LOOP_BACK)
         X_train_b = np.reshape(X_train_b, (X_train_b.shape[0], 1, X_train_b.shape[1]))
 
         json_file = open(nn_name + '.json', 'r')
@@ -80,19 +76,20 @@ def main():
         a = np.concatenate([yhat_inverse, testY_inverse], axis=1)
         df = pd.DataFrame(a, columns=['p', 't'])
         ds = widows_distance(yhat_inverse, testY_inverse)
-
-        fig, (ax1, ax2, ax3) = plt.subplots(nrows=3, ncols=1, figsize=(30, 20))
-        df.plot(y='p', ax=ax1, color='red', label='p')
-        df.plot(y='t', ax=ax1, color='blue', label='t')
-        df['sqr'] = (df['p'].apply(lambda x: x*x) - df['t'].apply(lambda x: x*x)).\
-            apply(lambda x: math.fabs(x)).apply(lambda x: math.sqrt(x))
-        df.plot(y='sqr', ax=ax2, color='red', label='sq')
-        df = windsmotch(df, 'sqr')
+        std = ds.std()
+        print(file, std)
+        fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1, figsize=(30, 20))
+        df.plot(y='p', ax=ax1, color='red', label='Предсказание')
+        df.plot(y='t', ax=ax1, color='blue', label='Данные канал №' + str(CHANNEL))
+        df['sqr'] = 0.15 #(df['p'].apply(lambda x: x*x) - df['t'].apply(lambda x: x*x)).\
+            #apply(lambda x: math.fabs(x)).apply(lambda x: math.sqrt(x))
         #df.plot(y='sqr', ax=ax3, color='red', label='sq')
+        #df = windsmotch(df, 'sqr')
+        df.plot(y='sqr', ax=ax2, color='red', label='Зона детекции')
         #plt.show()
-        plt.plot(ds, label='predict')
-        plt.show()
-        #fig.savefig(os.path.splitext(file)[0] + '.pdf')
+        plt.plot(ds, label='Контроль сигнала')
+        #plt.show()
+        fig.savefig(os.path.splitext(file)[0] + '.pdf')
 
 
 def widows_distance(p, t):
