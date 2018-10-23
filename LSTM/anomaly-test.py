@@ -88,10 +88,11 @@ def main():
             apply(lambda x: math.fabs(x)).apply(lambda x: math.sqrt(x))
         df.plot(y='sqr', ax=ax2, color='red', label='sq')
         df = windsmotch(df, 'sqr')
-        df.plot(y='sqr', ax=ax3, color='red', label='sq')
+        #df.plot(y='sqr', ax=ax3, color='red', label='sq')
         #plt.show()
         plt.plot(ds, label='predict')
-        fig.savefig(os.path.splitext(file)[0] + '.pdf')
+        plt.show()
+        #fig.savefig(os.path.splitext(file)[0] + '.pdf')
 
 
 def widows_distance(p, t):
@@ -101,7 +102,7 @@ def widows_distance(p, t):
     for i in range(winsize, p.shape[0]-1, offset):
         sq = np.sqrt(np.abs(np.subtract(np.power(p[i-winsize: i+winsize], 2),
                                         np.power(t[i-winsize: i+winsize], 2)))).min()
-        res[i-winsize: i+winsize] = sq
+        res[i-winsize: i+winsize] = sq / np.abs(p[i-winsize: i+winsize]).max()
     return res
 
 
