@@ -11,7 +11,7 @@ from datetime import timedelta, datetime
 import os
 import json
 
-CHANNEL = 4
+CHANNEL = 3
 LOOP_BACK = 64
 OPTIM = Adam(lr=0.001)
 
