@@ -40,9 +40,9 @@ def create_dataset(dataset, loopback=1):
 def main():
     for file in os.listdir(PATH_FILE):
         if CHANNEL == 2 or CHANNEL == 3:
-            nn_name = 'lstm-rl-23'
+            nn_name = 'lstmbi-rl-23'
         else:
-            nn_name = 'lstm-rl'
+            nn_name = 'lstmbi-rl-14'
 
         df = pd.DataFrame([], columns=column)
         pd_bed = pd.read_csv(PATH_FILE + file, sep=';', parse_dates=[1])
@@ -88,10 +88,11 @@ def main():
             apply(lambda x: math.fabs(x)).apply(lambda x: math.sqrt(x))
         df.plot(y='sqr', ax=ax2, color='red', label='sq')
         df = windsmotch(df, 'sqr')
-        df.plot(y='sqr', ax=ax3, color='red', label='sq')
+        #df.plot(y='sqr', ax=ax3, color='red', label='sq')
         #plt.show()
         plt.plot(ds, label='predict')
-        fig.savefig(os.path.splitext(file)[0] + '.pdf')
+        plt.show()
+        #fig.savefig(os.path.splitext(file)[0] + '.pdf')
 
 
 def widows_distance(p, t):
@@ -101,7 +102,7 @@ def widows_distance(p, t):
     for i in range(winsize, p.shape[0]-1, offset):
         sq = np.sqrt(np.abs(np.subtract(np.power(p[i-winsize: i+winsize], 2),
                                         np.power(t[i-winsize: i+winsize], 2)))).min()
-        res[i-winsize: i+winsize] = sq
+        res[i-winsize: i+winsize] = sq / np.abs(p[i-winsize: i+winsize]).max()
     return res
 
 
