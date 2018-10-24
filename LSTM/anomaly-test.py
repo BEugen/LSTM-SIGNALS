@@ -11,7 +11,7 @@ from datetime import timedelta, datetime
 import os
 import json
 
-CHANNEL = 3
+CHANNEL = 1
 LOOP_BACK = 64
 OPTIM = Adam(lr=0.001)
 
@@ -76,12 +76,12 @@ def main():
         a = np.concatenate([yhat_inverse, testY_inverse], axis=1)
         df = pd.DataFrame(a, columns=['p', 't'])
         ds = widows_distance(yhat_inverse, testY_inverse)
-        std = ds.std()
-        print(file, std)
+        mn = ds.mean() * 2.2
+        print(file, mn)
         fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1, figsize=(30, 20))
         df.plot(y='p', ax=ax1, color='red', label='Предсказание')
         df.plot(y='t', ax=ax1, color='blue', label='Данные канал №' + str(CHANNEL))
-        df['sqr'] = 0.15 #(df['p'].apply(lambda x: x*x) - df['t'].apply(lambda x: x*x)).\
+        df['sqr'] = mn if mn > 0.10 else 0.10 #(df['p'].apply(lambda x: x*x) - df['t'].apply(lambda x: x*x)).\
             #apply(lambda x: math.fabs(x)).apply(lambda x: math.sqrt(x))
         #df.plot(y='sqr', ax=ax3, color='red', label='sq')
         #df = windsmotch(df, 'sqr')
