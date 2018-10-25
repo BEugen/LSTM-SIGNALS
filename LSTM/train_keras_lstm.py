@@ -1,4 +1,4 @@
-from keras import Model, Input
+from keras import Model, Input, callbacks
 from keras.models import Sequential
 from keras.optimizers import SGD, Adam, RMSprop
 from keras.layers import (LSTM, Dense, Activation, BatchNormalization,
@@ -8,20 +8,19 @@ import numpy as np
 from sklearn.metrics import mean_squared_error
 from math import sqrt
 import os
-from keras.callbacks import TensorBoard
-from time import time
 import pandas as pd
 from matplotlib import pyplot
+import argparse
 
-CHANNEL = 1
+CHANNEL = 2
 LOOP_BACK = 64
 BATCH_SIZE = 200
-NB_EPOCH = 300
+NB_EPOCH = 600
 VERBOSE = 1
 INIT_LR = 0.01
 OPTIM = Adam(lr=0.001)
 LENGHT = 10
-MODEL_NAME = 'lstmbi-rl-23'
+MODEL_NAME = 'lstmbiem-rl-23'
 
 
 def load_data(data, loop_back=1):
@@ -70,7 +69,7 @@ def lstmbi(shape):
 
 
 
-def main():
+def main(args):
     df = pd.read_csv('railsdataset.csv', sep=';')
     data = df['p1_ch' + str(CHANNEL)].tolist()
     data = np.array(data).astype('float32').reshape(-1, 1)
@@ -83,11 +82,16 @@ def main():
     #tensorboard = TensorBoard(log_dir="logs/{}".format(time()), write_graph=True, write_grads=True, write_images=True,
     #                          histogram_freq=0)
     # fit
+    log = callbacks.CSVLogger(args.save_dir + '/log.csv')
+    tb = callbacks.TensorBoard(log_dir=args.save_dir + '/tensorboard-logs',
+                               batch_size=BATCH_SIZE, histogram_freq=int(args.debug))
+    checkpoint = callbacks.ModelCheckpoint(args.save_dir + '/' + MODEL_NAME + '-{epoch:02d}.h5', monitor='val_loss',
+                                           save_best_only=True, save_weights_only=True, verbose=1)
     model = lstmbi((X_train.shape[1], X_train.shape[2]))
     model.compile(loss='mae', optimizer=OPTIM)
     history = model.fit(X_train, Y_train, batch_size=BATCH_SIZE, epochs=NB_EPOCH, verbose=VERBOSE,
                         validation_data=(X_test, Y_test),
-                        shuffle=False) #callbacks=[tensorboard]
+                        shuffle=False,  callbacks=[log, tb, checkpoint]) #callbacks=[tensorboard]
     # save model
     model_json = model.to_json()
     with open(MODEL_NAME + ".json", "w") as json_file:
@@ -149,4 +153,9 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(description="LSTM Network.")
+    parser.add_argument('--debug', action='store_true',
+                        help="Save weights by TensorBoard")
+    parser.add_argument('--save_dir', default='./' + MODEL_NAME)
+    args = parser.parse_args()
+    main(args)

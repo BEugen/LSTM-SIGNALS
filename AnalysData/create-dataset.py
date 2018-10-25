@@ -6,7 +6,7 @@ import json
 column = ['p1_ch1', 'p1_ch2', 'p1_ch3', 'p1_ch4']
 ch_null = {'1': 142, '2': 104, '3': 123, '4': 146}
 PATH_JSON = '/mnt/data/data/LSTM-RL/rs/jsn/'
-PATH_FILE = '/mnt/data/data/LSTM-RL/rs/ep/bax/'#'E:/TMP/rs/ep/gd/'
+PATH_FILE = '/mnt/data/data/LSTM-RL/rs/ep/gd/'#'E:/TMP/rs/ep/gd/'
 
 def main():
     dataset = pd.DataFrame([], columns=column)
@@ -20,7 +20,7 @@ def main():
         df.drop('datetime', axis=1)
         print(file, df[column].max())
         dataset = dataset.append(df[0: ind+10].drop('datetime', axis=1))
-    dataset.to_csv('railsdataset_bad.csv', sep=';', index=False)
+    dataset.to_csv('railsdataset.csv', sep=';', index=False)
 
 
 def windsmotch(data, col):
